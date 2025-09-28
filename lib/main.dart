@@ -7,6 +7,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -22,6 +24,8 @@ class MyApp extends StatelessWidget {
 
 // Page 1: Connect to ESP32
 class ConnectPage extends StatefulWidget {
+  const ConnectPage({super.key});
+
   @override
   _ConnectPageState createState() => _ConnectPageState();
 }
@@ -94,6 +98,8 @@ class _ConnectPageState extends State<ConnectPage> {
 
 // Page 2: Connected to ESP32
 class ConnectedPage extends StatelessWidget {
+  const ConnectedPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,7 +155,7 @@ class ConnectedPage extends StatelessWidget {
                 backgroundColor: Colors.green,
                 padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
               ),
-              child: Text('Next', style: TextStyle(fontSize: 18)),
+              child: Text('Start Scaning', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),
@@ -160,6 +166,8 @@ class ConnectedPage extends StatelessWidget {
 
 // Page 3: Measuring Magnetic Field
 class MeasuringPage extends StatefulWidget {
+  const MeasuringPage({super.key});
+
   @override
   _MeasuringPageState createState() => _MeasuringPageState();
 }
@@ -179,11 +187,20 @@ class _MeasuringPageState extends State<MeasuringPage>
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
     _animationController.repeat();
 
-    // After 3 seconds, go to height map
+    // After 3 seconds, go to FinishScanPage instead of HeightMapPage
     Timer(Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HeightMapPage()),
+        MaterialPageRoute(
+          builder: (context) => FinishScanPage(
+            onViewResult: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HeightMapPage()),
+              );
+            },
+          ),
+        ),
       );
     });
   }
@@ -253,6 +270,8 @@ class _MeasuringPageState extends State<MeasuringPage>
 
 // Page 4: Height Map
 class HeightMapPage extends StatefulWidget {
+  const HeightMapPage({super.key});
+
   @override
   _HeightMapPageState createState() => _HeightMapPageState();
 }
@@ -397,7 +416,7 @@ class HeightMapPainter extends CustomPainter {
 class Map3DPage extends StatefulWidget {
   final List<List<double>> heightMap;
 
-  Map3DPage(this.heightMap);
+  const Map3DPage(this.heightMap, {super.key});
 
   @override
   _Map3DPageState createState() => _Map3DPageState();
@@ -432,7 +451,7 @@ class _Map3DPageState extends State<Map3DPage> {
                 onPanUpdate: (details) {
                   setState(() {
                     _rotationY += details.delta.dx * 0.01;
-                    _rotationX += details.delta.dy * 0.01;
+                    _rotationX -= details.delta.dy * 0.01; // Invert Y axis
                     _rotationX = _rotationX.clamp(-math.pi / 2, math.pi / 2);
                   });
                 },
@@ -786,4 +805,51 @@ class Map3DPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class FinishScanPage extends StatelessWidget {
+  final VoidCallback onViewResult;
+
+  const FinishScanPage({super.key, required this.onViewResult});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Scan Complete'),
+        backgroundColor: Colors.blueGrey[800],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, size: 100, color: Colors.green),
+            SizedBox(height: 30),
+            Text(
+              'Scan Complete',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'VolStrax_DRONE_MAG_001',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: onViewResult,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              ),
+              child: Text('View Result', style: TextStyle(fontSize: 18)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
